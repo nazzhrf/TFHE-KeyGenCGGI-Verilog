@@ -1,2 +1,5 @@
+.gitignore
 unused/
 Vivado/
+Mult64.v
+backup.txt
