@@ -1,0 +1,69 @@
+// *** AFTER DUG AND GNG PRODUCES VALID NUMBER, STORED 1024 VALID NUMBER AS [A(X), B(X)] IN BRAM ********************************************************************************************************************************
+    // RLWE CIPHERTEXT 1
+    assign out_rlwe1_ena    = (cntr_addr_mt-gng >= 1 && cntr_addr_mt-gng <= 1025) ? 1: 0 ;   
+    assign out_rlwe1_wea    = (cntr_addr_mt-gng >= 1 && cntr_addr_mt-gng <= 1025) ? 8'b11111111: 0 ;
+    assign out_rlwe1_addra  = (cntr_addr_mt-gng >= 1 && cntr_addr_mt-gng <= 1024) ? (cntr_addr_gng-1) : 20;
+    assign out_rlwe1_dina   = (cntr_addr_mt-gng >= 1 && cntr_addr_mt-gng <= 1024) ? {mt1_output_axis_tdata, gng1_data_out} : {out1, gng1_data_out} ;
+    // RLWE CIPHERTEXT 2
+    assign out_rlwe2_ena    = (cntr_addr_mt-gng >= 1 && cntr_addr_mt-gng <= 1025) ? 1: 0 ;   
+    assign out_rlwe2_wea    = (cntr_addr_mt-gng >= 1 && cntr_addr_mt-gng <= 1025) ? 8'b11111111: 0 ;
+    assign out_rlwe2_addra  = (cntr_addr_mt-gng >= 1 && cntr_addr_mt-gng <= 1024) ? (cntr_addr_gng-1) : 20;
+    assign out_rlwe2_dina   = (cntr_addr_mt-gng >= 1 && cntr_addr_mt-gng <= 1024) ? {mt2_output_axis_tdata, gng2_data_out} : {mt2_output_axis_tdata, out2} ;
+    // RLWE CIPHERTEXT 3
+    assign out_rlwe3_ena    = (cntr_addr_mt-gng >= 1 && cntr_addr_mt-gng <= 1025) ? 1: 0 ;   
+    assign out_rlwe3_wea    = (cntr_addr_mt-gng >= 1 && cntr_addr_mt-gng <= 1025) ? 8'b11111111: 0 ;
+    assign out_rlwe3_addra  = (cntr_addr_mt-gng >= 1 && cntr_addr_mt-gng <= 1024) ? (cntr_addr_gng-1) : 20;
+    assign out_rlwe3_dina   = (cntr_addr_mt-gng >= 1 && cntr_addr_mt-gng <= 1024) ? {mt3_output_axis_tdata, gng3_data_out} : {out3, gng3_data_out} ;
+    // RLWE CIPHERTEXT 4
+    assign out_rlwe4_ena    = (cntr_addr_mt-gng >= 1 && cntr_addr_mt-gng <= 1025) ? 1 : 0 ;   
+    assign out_rlwe4_wea    = (cntr_addr_mt-gng >= 1 && cntr_addr_mt-gng <= 1025) ? 8'b11111111 : 0 ;
+    assign out_rlwe4_addra  = (cntr_addr_mt-gng >= 1 && cntr_addr_mt-gng <= 1024) ? (cntr_addr_gng-1) : 20;
+    assign out_rlwe4_dina   = (cntr_addr_mt-gng >= 1 && cntr_addr_mt-gng <= 1024) ? {mt4_output_axis_tdata, gng4_data_out} : {mt4_output_axis_tdata, out4} ;
+    // One clock after counter "cntr_addr_mt-gng" has value 1025, the register "ax_ex_first_assign" will has active high value
+
+    // *** ADD THE MASKING COEFF IN ADDRESS 20 OF A(X) AND E(X)********************************************************************************************************************************
+    // Masking coeff : Coefficient of polynomials A(X) and B(X) that multiply with gadget matrix, can only exist one masking coefficient.
+    // Usually for even ciphertext (0 and 2), the masking coeff will be one coeff of A(x) 
+    // Usually for odd ciphertext (1 and 3), the masking coeff will be one coeff of B(x)
+    // We choose the x^19 degree coeff. This coeff is stored in address 20.
+    // So when the counter "cntr_addr_gng" reach 20, we will assign the value to some signal.
+    assign a1 = (cntr_addr_gng == 20) ? out_rlwe1_dina[63:32] : 0;
+    assign a2 = (cntr_addr_gng == 20) ? out_rlwe2_dina[31:0] : 0;
+    assign a3 = (cntr_addr_gng == 20) ? out_rlwe3_dina[63:32] : 0;
+    assign a4 = (cntr_addr_gng == 20) ? out_rlwe4_dina[31:0] : 0;
+    // This signal will fed as inputs to ModAddFastEq module that will multiply it with the relevant gadget matrix values.
+    // The result from ModAddFastEq later will be stored again in addres 20 of BRAM.
+    // Here's the trick. When counter "cntr_addr_gng" reach 1025, the address will be 20, - 
+    // - and the corresponding data fed to port A BRAM when that time happen is ModAddFastEq results.
+
+
+
+
+    // *** ASSIGN BRAM OUTPUT TO WIRE TEMPORARELY ********************************************************************************************************************************
+    assign N            = (cntr_main_reg >= 1) ? in_parbit_doutb[63:32]         : 0;  
+    assign Q            = (cntr_main_reg >= 1) ? in_parbit_doutb[31:0]          : 0;
+    assign baseG        = (cntr_main_reg >= 2) ? in_parbit_doutb[63:32]         : 0;
+    assign digitsG      = (cntr_main_reg >= 3) ? in_parbit_doutb[63:32]         : 0;
+    assign digitsG2     = (cntr_main_reg >= 3) ? in_parbit_doutb[31:0]          : 0;
+    assign mt1_seed     = (cntr_main_reg >= 4) ? in_parbit_doutb[63:32]         : 0;  
+    assign mt2_seed     = (cntr_main_reg >= 4) ? in_parbit_doutb[31:0]          : 0;
+    assign mt3_seed     = (cntr_main_reg >= 5) ? in_parbit_doutb[63:32]         : 0;
+    assign mt4_seed     = (cntr_main_reg >= 5) ? in_parbit_doutb[31:0]          : 0;
+    assign gng1_seed    = (cntr_main_reg >= 6) ? {32'd0, in_parbit_doutb[63:32]}: 0;
+    assign gng2_seed    = (cntr_main_reg >= 6) ? {32'd0, in_parbit_doutb[63:32]}: 0;
+    assign gng3_seed    = (cntr_main_reg >= 7) ? {32'd0, in_parbit_doutb[63:32]}: 0;
+    assign gng4_seed    = (cntr_main_reg >= 7) ? {32'd0, in_parbit_doutb[63:32]}: 0;
+
+    assign N            = (cntr_main_reg == 1) ? in_parbit_doutb[63:32]         : 0;  
+    assign Q            = (cntr_main_reg == 1) ? in_parbit_doutb[31:0]          : 0;
+    assign baseG        = (cntr_main_reg == 2) ? in_parbit_doutb[63:32]         : 0;
+    assign digitsG      = (cntr_main_reg == 3) ? in_parbit_doutb[63:32]         : 0;
+    assign digitsG2     = (cntr_main_reg == 3) ? in_parbit_doutb[31:0]          : 0;
+    assign mt1_seed     = (cntr_main_reg == 4) ? in_parbit_doutb[63:32]         : 0;  
+    assign mt2_seed     = (cntr_main_reg == 4) ? in_parbit_doutb[31:0]          : 0;
+    assign mt3_seed     = (cntr_main_reg == 5) ? in_parbit_doutb[63:32]         : 0;
+    assign mt4_seed     = (cntr_main_reg == 5) ? in_parbit_doutb[31:0]          : 0;
+    assign gng1_seed    = (cntr_main_reg == 6) ? {32'd0, in_parbit_doutb[63:32]}: 0;
+    assign gng2_seed    = (cntr_main_reg == 6) ? {32'd0, in_parbit_doutb[63:32]}: 0;
+    assign gng3_seed    = (cntr_main_reg == 7) ? {32'd0, in_parbit_doutb[63:32]}: 0;
+    assign gng4_seed    = (cntr_main_reg == 7) ? {32'd0, in_parbit_doutb[63:32]}: 0;
